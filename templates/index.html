@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Username Checker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #161a23;
+      --border:    #252933;
+      --text:      #e2e6f0;
+      --muted:     #6b7280;
+      --accent:    #6366f1;
+      --accent-h:  #818cf8;
+      --green:     #22c55e;
+      --green-bg:  #052e16;
+      --red:       #ef4444;
+      --red-bg:    #2d0707;
+      --yellow:    #f59e0b;
+      --yellow-bg: #2d1b00;
+      --radius:    10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 24px 24px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 18px;
+    }
+
+    header h1 span { color: var(--accent-h); }
+
+    .search-wrap {
+      display: flex;
+      gap: 10px;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    #username-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 1rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    #username-input:focus { border-color: var(--accent); }
+    #username-input::placeholder { color: var(--muted); }
+
+    #search-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 10px 22px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    #search-btn:hover { background: var(--accent-h); }
+    #search-btn:active { transform: scale(0.97); }
+    #search-btn:disabled { background: #374151; cursor: not-allowed; }
+
+    /* ── STATS BAR ──────────────────────────────────────────── */
+    #stats-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 10px 24px;
+      flex-wrap: wrap;
+      min-height: 48px;
+    }
+
+    .stat {
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .stat-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot-available { background: var(--green); }
+    .dot-taken     { background: var(--red); }
+    .dot-unknown   { background: var(--yellow); }
+
+    #progress-bar-wrap {
+      flex: 1;
+      background: var(--border);
+      border-radius: 99px;
+      height: 5px;
+      min-width: 80px;
+    }
+
+    #progress-bar {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.2s;
+    }
+
+    #progress-text { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+
+    /* ── FILTERS ────────────────────────────────────────────── */
+    #filter-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 14px 24px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .filter-label { font-size: 0.8rem; color: var(--muted); margin-right: 2px; }
+
+    .filter-btn {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 99px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 4px 14px;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+
+    .filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .filter-btn.active-available {
+      background: var(--green-bg);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .filter-btn.active-taken {
+      background: var(--red-bg);
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .cat-filter-btn {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 99px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.78rem;
+      padding: 3px 11px;
+      transition: all 0.15s;
+    }
+
+    .cat-filter-btn:hover { border-color: var(--accent-h); color: var(--text); }
+    .cat-filter-btn.active { border-color: var(--accent-h); color: var(--accent-h); background: rgba(99,102,241,0.12); }
+
+    /* ── GRID ───────────────────────────────────────────────── */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      padding: 20px 24px 40px;
+    }
+
+    /* ── CARD ───────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px;
+      text-decoration: none;
+      transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: var(--radius) var(--radius) 0 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .card.taken::before    { background: var(--red);    opacity: 1; }
+    .card.available::before { background: var(--green);  opacity: 1; }
+    .card.checking::before  { background: var(--accent); opacity: 0.5; animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .card.available { border-color: rgba(34,197,94,0.35); }
+    .card.taken     { border-color: rgba(239,68,68,0.35); }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      object-fit: contain;
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+
+    .card-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-cat {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .card-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 3px 8px;
+      width: fit-content;
+    }
+
+    .card-status.available { background: var(--green-bg); color: var(--green); }
+    .card-status.taken     { background: var(--red-bg);   color: var(--red); }
+    .card-status.checking  { background: rgba(99,102,241,0.12); color: var(--accent-h); }
+    .card-status.timeout   { background: var(--yellow-bg); color: var(--yellow); }
+    .card-status.error     { background: var(--yellow-bg); color: var(--yellow); }
+
+    .card-status::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* ── EMPTY STATE ────────────────────────────────────────── */
+    #empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+    }
+
+    #empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+    #empty-state h2 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
+    #empty-state p  { font-size: 0.9rem; }
+
+    /* ── HIDDEN ─────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <h1>⚡ <span>Username</span> Checker</h1>
+  <div class="search-wrap">
+    <input
+      id="username-input"
+      type="text"
+      placeholder="Enter a username…"
+      autocomplete="off"
+      spellcheck="false"
+      maxlength="40"
+    />
+    <button id="search-btn">Search</button>
+  </div>
+</header>
+
+<!-- STATS BAR -->
+<div id="stats-bar">
+  <div class="stat">
+    <span class="stat-dot dot-available"></span>
+    <span id="cnt-available">0</span> available
+  </div>
+  <div class="stat">
+    <span class="stat-dot dot-taken"></span>
+    <span id="cnt-taken">0</span> taken
+  </div>
+  <div class="stat">
+    <span class="stat-dot dot-unknown"></span>
+    <span id="cnt-unknown">0</span> unknown
+  </div>
+  <div id="progress-bar-wrap">
+    <div id="progress-bar"></div>
+  </div>
+  <span id="progress-text">{{ total }} platforms</span>
+</div>
+
+<!-- FILTER BAR -->
+<div id="filter-bar">
+  <span class="filter-label">Show:</span>
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="available">Available</button>
+  <button class="filter-btn" data-filter="taken">Taken</button>
+  <button class="filter-btn" data-filter="unknown">Unknown</button>
+  <span style="margin-left:8px; color:var(--border)">|</span>
+  <span class="filter-label">Category:</span>
+  <button class="cat-filter-btn active" data-cat="all">All</button>
+  {% for cat in categories %}
+  <button class="cat-filter-btn" data-cat="{{ cat }}">{{ cat }}</button>
+  {% endfor %}
+</div>
+
+<!-- RESULTS GRID -->
+<div id="grid">
+  <div id="empty-state">
+    <div class="icon">🔍</div>
+    <h2>Enter a username to check availability</h2>
+    <p>Checks {{ total }} platforms simultaneously in real time.</p>
+  </div>
+</div>
+
+<script>
+  const TOTAL = {{ total }};
+
+  const input       = document.getElementById('username-input');
+  const searchBtn   = document.getElementById('search-btn');
+  const grid        = document.getElementById('grid');
+  const emptyState  = document.getElementById('empty-state');
+  const progressBar = document.getElementById('progress-bar');
+  const progressTxt = document.getElementById('progress-text');
+  const cntAvail    = document.getElementById('cnt-available');
+  const cntTaken    = document.getElementById('cnt-taken');
+  const cntUnknown  = document.getElementById('cnt-unknown');
+
+  let activeFilter    = 'all';
+  let activeCat       = 'all';
+  let cards           = {};  // name → { el, status, cat }
+  let counts          = { available: 0, taken: 0, unknown: 0 };
+  let checked         = 0;
+  let currentES       = null;
+
+  // ── FAVICON ────────────────────────────────────────────────
+  function faviconUrl(urlMain) {
+    try {
+      const domain = new URL(urlMain).hostname;
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+    } catch { return ''; }
+  }
+
+  // ── BUILD CARD ─────────────────────────────────────────────
+  function buildCard(name, urlMain, category) {
+    const el = document.createElement('a');
+    el.className = 'card checking';
+    el.target = '_blank';
+    el.rel = 'noopener noreferrer';
+    el.dataset.name     = name;
+    el.dataset.status   = 'checking';
+    el.dataset.category = category;
+
+    const iconSrc = faviconUrl(urlMain);
+
+    el.innerHTML = `
+      <div class="card-top">
+        <img class="card-icon" src="${iconSrc}" alt="" onerror="this.style.visibility='hidden'"/>
+        <div>
+          <div class="card-name" title="${name}">${name}</div>
+          <div class="card-cat">${category}</div>
+        </div>
+      </div>
+      <div class="card-status checking">Checking…</div>
+    `;
+    return el;
+  }
+
+  // ── FILTER VISIBILITY ──────────────────────────────────────
+  function applyFilters() {
+    Object.values(cards).forEach(({ el, status, cat }) => {
+      const statusOk = activeFilter === 'all' ||
+        (activeFilter === 'unknown' && (status === 'timeout' || status === 'error' || status === 'checking')) ||
+        status === activeFilter;
+      const catOk = activeCat === 'all' || cat === activeCat;
+      el.classList.toggle('hidden', !(statusOk && catOk));
+    });
+  }
+
+  // ── UPDATE CARD ────────────────────────────────────────────
+  function updateCard(result) {
+    const { name, url, status, category } = result;
+    if (!cards[name]) return;
+
+    const { el } = cards[name];
+    const prev = cards[name].status;
+
+    cards[name].status = status;
+
+    // update count
+    if (prev === 'checking' && status !== 'checking') {
+      checked++;
+      const pct = Math.round((checked / TOTAL) * 100);
+      progressBar.style.width = pct + '%';
+      progressTxt.textContent = `${checked} / ${TOTAL}`;
+    }
+
+    if (status === 'available') {
+      counts.available++;
+      cntAvail.textContent = counts.available;
+    } else if (status === 'taken') {
+      counts.taken++;
+      cntTaken.textContent = counts.taken;
+    } else {
+      counts.unknown++;
+      cntUnknown.textContent = counts.unknown;
+    }
+
+    // update card classes
+    el.className = 'card ' + (status === 'taken' || status === 'available' ? status : 'error');
+    if (url) el.href = url;
+
+    const statusEl = el.querySelector('.card-status');
+    const labels = {
+      available: 'Available',
+      taken:     'Taken',
+      timeout:   'Timeout',
+      error:     'Error',
+    };
+    statusEl.className = 'card-status ' + status;
+    statusEl.textContent = labels[status] || 'Unknown';
+
+    applyFilters();
+  }
+
+  // ── SEARCH ─────────────────────────────────────────────────
+  function startSearch() {
+    const username = input.value.trim();
+    if (!username) { input.focus(); return; }
+
+    // abort previous
+    if (currentES) { currentES.close(); currentES = null; }
+
+    // reset
+    grid.innerHTML = '';
+    cards = {};
+    counts = { available: 0, taken: 0, unknown: 0 };
+    checked = 0;
+    cntAvail.textContent = '0';
+    cntTaken.textContent = '0';
+    cntUnknown.textContent = '0';
+    progressBar.style.width = '0%';
+    progressTxt.textContent = `0 / ${TOTAL}`;
+    searchBtn.disabled = true;
+    searchBtn.textContent = 'Searching…';
+
+    // pre-build all cards (sorted by name)
+    const placeholder = [];
+    // we'll add them as results stream in, or pre-add them
+    // Actually pre-add stubs so user sees the grid immediately:
+    fetch('/sites-list')
+      .then(r => r.json())
+      .then(list => {
+        list.forEach(({ name, urlMain, category }) => {
+          const el = buildCard(name, urlMain, category);
+          grid.appendChild(el);
+          cards[name] = { el, status: 'checking', cat: category };
+        });
+        applyFilters();
+      })
+      .catch(() => {});
+
+    // SSE stream
+    const es = new EventSource(`/check?q=${encodeURIComponent(username)}`);
+    currentES = es;
+
+    es.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.done) {
+        es.close();
+        currentES = null;
+        searchBtn.disabled = false;
+        searchBtn.textContent = 'Search';
+        progressTxt.textContent = `Done — ${TOTAL} platforms`;
+        return;
+      }
+      if (data.name) {
+        if (!cards[data.name]) {
+          // card wasn't pre-built (race); add it now
+          const el = buildCard(data.name, data.urlMain, data.category);
+          grid.appendChild(el);
+          cards[data.name] = { el, status: 'checking', cat: data.category };
+        }
+        updateCard(data);
+      }
+    };
+
+    es.onerror = () => {
+      es.close();
+      currentES = null;
+      searchBtn.disabled = false;
+      searchBtn.textContent = 'Search';
+    };
+  }
+
+  // ── FILTER BUTTONS ─────────────────────────────────────────
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.className = 'filter-btn';
+      });
+      activeFilter = btn.dataset.filter;
+      if (activeFilter === 'available') {
+        btn.className = 'filter-btn active-available';
+      } else if (activeFilter === 'taken') {
+        btn.className = 'filter-btn active-taken';
+      } else {
+        btn.className = 'filter-btn active';
+      }
+      applyFilters();
+    });
+  });
+
+  document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCat = btn.dataset.cat;
+      applyFilters();
+    });
+  });
+
+  // ── EVENTS ─────────────────────────────────────────────────
+  searchBtn.addEventListener('click', startSearch);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') startSearch(); });
+
+  // pre-focus
+  input.focus();
+</script>
+</body>
+</html>
